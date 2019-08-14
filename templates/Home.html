@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>StackRun</title>
+    <link href="https://fonts.googleapis.com/css?family=Noticia+Text|Righteous&display=swap" rel="stylesheet">
+</head>
+<style>
+    body{
+        font-family: 'Noticia Text', serif;
+        background: #eeeeee;
+    }
+    .Menu-bar{
+        position: fixed;
+        z-index: 100;
+        padding: 10px;
+        width: 100%;
+        left: 0;
+        top:0;
+        background: white;
+        box-shadow: 0px 1px 7px grey;
+    }
+    .Menu-bar a{
+        float: right;
+        margin-left: 10px;
+        margin-right:30px;
+        text-decoration: none;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    .Normal-link{
+        color: #7569ff;
+    }
+    .Menu-bar .Normal-link:hover{
+        color: #254386;
+    }
+    .Menu-bar .Logo{
+        float: left;
+        color: rgba(0,0,0,0.7);
+        font-family: 'Righteous', cursive;
+        font-weight: bolder;
+        font-size: 25px;
+    }
+    .Logo:hover{
+        color:rgba(0,0,0,0.7) !important;
+    }
+    .Main-area{
+        width:60%;
+        position: relative;
+        margin: auto;
+        top: 60px;
+    }
+    #CodeArea
+    {
+        font-weight: bold;
+        height: 60vh;
+        width: 100% ;
+        box-shadow: 0px 0px 20px rgba(0,0,0,0.9);
+    }
+    .runButton
+    {
+        position: relative;
+        margin-top:10px;
+        background: none;
+        padding:18px;
+        padding-top:8px;
+        padding-bottom:8px;
+        cursor: pointer;
+        font-weight: bold;
+        color:green;
+        border:1px solid green;
+        outline: none;
+        transition:0.2s;
+        border-radius:3px;
+    }
+    .runButton:hover{
+        color:white;
+        background: green;
+    }
+    .languageOptions
+    {
+        margin-top: 10px;
+        margin-left:15px;
+        position: relative;
+        padding:5px;
+        font-weight: bold;
+        color:green;
+    }
+    .inlineClass{
+        display: inline;
+    }
+    .controls
+    {
+        position: relative;
+        background:white;
+        padding: 10px;
+    }
+    .input
+    {
+        display: block;
+        margin-top: 10px;
+        margin-right: auto;
+        margin-left:auto;
+        width: 95%;
+        height: 15vh;
+        border-radius: 6px;
+        font-size: 15px;
+        resize: none;
+    }
+    .output
+    {
+        display: none;
+        margin-top: 10px;
+        margin-right: auto;
+        margin-left:auto;
+        width: 95%;
+        height: 15vh;
+        border-radius: 6px;
+        font-size: 15px;
+        resize: none;
+    }
+    .inputActive
+    {
+        margin-right:5px;
+        float: right;
+        position: relative;
+        margin-top:0px;
+        background: none;
+        padding:18px;
+        padding-top:8px;
+        padding-bottom:8px;
+        cursor: pointer;
+        font-weight: bold;
+        color:white;
+        background:green;
+        border:1px solid green;
+        outline: none;
+        transition:0.2s;
+        border-radius:3px;
+    }
+    .outputActive
+    {
+        float: right;
+        margin-right:15px;
+        position: relative;
+        margin-top:0px;
+        background: none;
+        padding:18px;
+        padding-top:8px;
+        padding-bottom:8px;
+        cursor: pointer;
+        font-weight: bold;
+        color:green;
+        border:1px solid green;
+        outline: none;
+        transition:0.2s;
+        border-radius:3px;
+    }
+    .inputActive:hover
+    {
+        color:white;
+        background: green;
+    }
+    .outputActive:hover
+    {
+        color:white;
+        background: green;
+    }
+    @media only screen and (max-width: 1000px) {
+        .Main-area{
+            width:80%;
+        }
+    }
+</style>
+<body>
+    <div class="Menu-bar">
+        <a href="/" class="Logo"> StackRun </a>
+        <a href="http://bitwise.tk" class="Normal-link"> Bitwise-JUET </a>
+        <a href="/" class="Normal-link"> new code </a>
+    </div>
+    <div class="Main-area">
+        <div id="CodeArea"></div>
+        <div class="controls">
+            <button onclick="textareaSwitch(2)" class="outputActive">Output</button>
+            <button onclick="textareaSwitch(1)" class="inputActive">Input</button>
+            <form action="/compile" method="post">
+                {% csrf_token %}
+                <textarea class="input" name="input" cols="30" rows="10" placeholder="enter input here">{{input}}</textarea>
+                <textarea class="output" id="output" name="output" readonly cols="30" rows="10" placeholder="output will appear here">{{output}}</textarea>
+                <select name="language" class="languageOptions" id="languageOptions"  onchange="changeMode(this.value)">
+                    <option value="c_cpp" >C</option>
+                    <option value="c_cpp" >C++</option>
+                    <option value="java"  >Java</option>
+                    <option value="python" >Python</option>
+            </select>
+                <textarea name="codeForBackend" id="codeForBackend" style="display:none;"></textarea>
+                <button onclick="textareaSwitch(2)" class="runButton">Run</button>
+            </form>
+        </div>
+    </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.5/ace.js"></script>
+    <script>
+        var editor_mode = "c_cpp";
+        var editor
+        function seteditor(){
+            editor = ace.edit("CodeArea");
+            editor.setTheme("ace/theme/pastel_on_dark");
+            editor.getSession().setMode("ace/mode/"+editor_mode);
+            editorvalue = `{{ editorvalue }}`.replace(/&#39;/g,"'").replace(/&amp;/g, "&").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&quot;/g, '"');
+            editor.setValue(editorvalue,-1);
+            var langOptions = document.getElementById("languageOptions");
+            for(var i=0;i<langOptions.options.length;i++)
+            {
+               if( i != {{ind}})
+               {
+                langOptions.options[i].defaultSelected = false;
+               }
+               else
+               {
+                langOptions.options[i].defaultSelected = true;
+               }
+            }
+        }
+        function changeMode(m)
+        {
+            editor_mode = m;
+            seteditor();
+        }
+        function textareaSwitch(c)
+        {
+            console.log(c);
+            if(c===2)
+            {
+                document.querySelector(".input").style.display="none";
+                document.querySelector(".inputActive").style.backgroundColor="white";
+                document.querySelector(".inputActive").style.color="green";
+                document.querySelector(".outputActive").style.backgroundColor="green";
+                document.querySelector(".outputActive").style.color="white";
+                document.querySelector(".output").style.display="block";
+            }
+            if(c===1)
+            {
+                document.querySelector(".input").style.display="block";
+                document.querySelector(".output").style.display="none";
+                document.querySelector(".outputActive").style.backgroundColor="white";
+                document.querySelector(".outputActive").style.color="green";
+                document.querySelector(".inputActive").style.backgroundColor="green";
+                document.querySelector(".inputActive").style.color="white";
+            }
+        }
+        seteditor();
+        var codeForBackend = document.getElementById("codeForBackend");
+        editor.getSession().on('change', function () {
+        codeForBackend.value = editor.getSession().getValue();
+        console.log(codeForBackend.value);
+         });
+         document.getElementById("output").style.color = "{{color}}";
+    	codeForBackend.value = editor.getSession().getValue();
+    </script>
+</body>
+</html>
